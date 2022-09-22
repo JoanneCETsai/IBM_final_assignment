@@ -1,0 +1,187 @@
+---
+title: "lab7"
+output: html_document
+date: '2022-04-14'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+# generate data
+set.seed(1)
+X <- matrix(rnorm(100*2), 100,2)
+xmean <- matrix(rnorm(8,sd=4), 4, 2)
+which <- sample(1:4, 100, replace = TRUE)
+X <- X + xmean[which,]
+plot(X, col=which, pch=19)
+```
+
+```{r}
+# use kmeans
+set.seed(1)
+km.out <- kmeans(X, 4, nstart=15)
+```
+
+
+```{r}
+plot(X, col=km.out$cluster, pch=1, cex=2, lwd=2) #size of the symbol and line width for the plotting symbols
+points(X, col=c(2,3,4,1)[which], pch=19)
+```
+
+```{r}
+# Queation 2: compare total within-cluster variability with different nstart
+set.seed(1)
+km.out1 <- kmeans(X, 4, nstart=1)
+km.out20 <- kmeans(X, 4, nstart=20)
+
+print(km.out1$withinss)
+print(km.out20$withinss)
+```
+
+```{r}
+# hierarchical clustering
+hc.complete <- hclust(dist(X), method="complete")
+hc.average <- hclust(dist(X), method="average")
+hc.single <- hclust(dist(X), method="single")
+
+# plot the dendrogram
+plot(hc.complete, main="Complete Linkage", cex=.9)
+plot(hc.average, main="Average Linkage", cex=.9)
+plot(hc.single, main="Single Linkage", cex=.9)
+
+```
+
+
+```{r}
+# compare complete linkage result and the true cluster, use table(predicts, truths) to how well the clusters are
+hc.cut <- cutree(hc.complete,4)
+
+plot(X, col=hc.cut, pch=1, cex=2, lwd=2) #size of the symbol and line width for the plotting symbols
+points(X, col=c(2,1,3,4)[which], pch=19)
+
+table(hc.cut, c(2,1,3,4)[which])
+```
+
+
+```{r}
+# average linkage
+hc.cut_average <- cutree(hc.average,4)
+
+plot(X, col=hc.cut_average, pch=1, cex=2, lwd=2) #size of the symbol and line width for the plotting symbols
+points(X, col=c(2,1,3,4)[which], pch=19)
+
+table(hc.cut, c(2,1,3,4)[which])
+```
+
+```{r}
+# Using the correlation distance to perform hierarchical clustering
+x3 <- matrix(rnorm(30*3), ncol=3)
+dd <- as.dist(1 - cor(t(x3)))
+plot(hclust(dd, method="complete"))
+```
+
+```{r}
+# Question 6: Perform hierarchical clustering on gene data
+
+df <- t(read.csv("/Users/chiaentsai/Desktop/Data Mining/lab/lab7/gene_data.csv", header=F))
+dim(df)
+sd.data <- scale(df)
+
+genehc_complete <- hclust(dist(sd.data), method="complete")
+genehc_average <- hclust(dist(sd.data), method="average")
+genehc_single <- hclust(dist(sd.data), method="single")
+
+plot(genehc_complete, main="Complete Linkage", cex=.9)
+plot(genehc_average, main="Average Linkage", cex=.9)
+plot(genehc_single, main="Single Linkage", cex=.9)
+```
+
+```{r}
+# compare running time
+average <- rep(0,30)
+complete <- rep(0,30)
+single <- rep(0,30)
+
+for (i in 1:30) {
+  
+  ptm = proc.time()
+  genehc_average <- hclust(dist(sd.data), method="average")
+  a <- proc.time() - ptm
+  average[i] <- a["elapsed"]
+}
+
+for (i in 1:30) {
+  
+  ptm = proc.time()
+  genehc_complete <- hclust(dist(sd.data), method="complete")
+  b <- proc.time() - ptm
+  complete[i] <- b["elapsed"]
+  
+}  
+  
+for (i in 1:30) {
+  
+  ptm = proc.time()
+  genehc_single <- hclust(dist(sd.data), method="single")
+  c <- proc.time() - ptm
+  single[i] <- c["elapsed"]
+  
+}  
+
+sum(average)/30
+sum(complete)/30
+sum(single)/30
+```
+
+
+
+```{r}
+# cut at the second level and see whether they successfully separate healthy points
+genehc_complete_cut <- cutree(genehc_complete,2)
+genehc_average_cut <- cutree(genehc_average,2)
+genehc_single_cut <- cutree(genehc_single,2)
+
+#plot(sd.data, col=c(rep(1,20),rep(2,20)), pch=19)
+#points(sd.data, col=genehc_complete_cut, pch=1, cex=2, lwd=2)
+
+print(genehc_complete_cut[1:20])
+print(genehc_average_cut[1:20])
+print(genehc_single_cut[1:20])
+# copy
+#plot(X, col=hc.cut_average, pch=1, cex=2, lwd=2) #size of the symbol and line width for the plotting symbols
+#points(X, col=c(2,1,3,4)[which], pch=19)
+```
+
+```{r}
+# Question 7 : Repeat the above using correlation distance for the complete linkage case
+distance <- as.dist(1 - cor(t(sd.data)))
+genehc_complete_cor <- hclust(distance, method="complete")
+plot(genehc_complete_cor, main="Complete Linkage", cex=.9)
+genehc_complete_cor_cut <- cutree(genehc_complete_cor,2)
+print(genehc_complete_cor_cut[1:20])
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

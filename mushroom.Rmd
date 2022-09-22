@@ -1,0 +1,212 @@
+---
+title: "lab8"
+output: html_document
+date: '2022-04-26'
+---
+
+```{r}
+install.packages("e1071")
+library(e1071)
+mushroom <- read.csv("/Users/chiaentsai/Desktop/Data Mining/lab/lab8/mushroom.csv")
+distm <- as.dist(hamming.distance(as.matrix(mushroom)[,2:14])) 
+hc.complete <- hclust(distm, method = "complete")
+
+plot(hc.complete, main = "Complete Linkage", cex = .9)
+hc.cut <- cutree(hc.complete, 8)
+```
+
+```{r}
+# question 1.2
+table(mushroom[,1], hc.cut)
+
+pred_mushroom <- rep(0,nrow(mushroom))
+
+for (i in 1:nrow(mushroom)) {
+  if (hc.cut[i] == 1) {
+    pred_mushroom[i] <- "p"  
+  } else {
+  pred_mushroom[i] <- "e"  
+  }
+  
+}
+print(pred_mushroom)
+
+table(pred_mushroom, mushroom[,1])
+```
+
+```{r}
+# question 1.3
+hc.cut_2 <- cutree(hc.complete, 2)
+
+table(mushroom[,1], hc.cut_2)
+
+pred_mushroom_2 <- rep(0,nrow(mushroom))
+
+for (i in 1:nrow(mushroom)) {
+  if (hc.cut_2[i] == 1) {
+    pred_mushroom_2[i] <- "p"  
+  } else {
+  pred_mushroom_2[i] <- "e"  
+  }
+  
+}
+print(pred_mushroom_2)
+
+table(pred_mushroom_2, mushroom[,1])
+```
+
+```{r}
+# question 1.4
+install.packages("dummies")
+library(dummies)
+
+dummy_data = matrix(, nrow = nrow(mushroom))
+for (i in 2:14) {
+  new <- dummy(as.matrix(mushroom)[,i])
+  dummy_data <- cbind(dummy_data, new)         
+}
+dummy_data <- dummy_data[,-1] # delete the column contains NA
+hc.complete_dummy <- hclust(dist(dummy_data,method = "euclidean"), method="complete")
+hc.cut_dummy <- cutree(hc.complete_dummy, 8)
+
+table(mushroom[,1], hc.cut_dummy)
+
+pred_mushroom_dummy <- rep(0,nrow(mushroom))
+
+for (i in 1:nrow(mushroom)) {
+  if (hc.cut_dummy[i] == 1) {
+    pred_mushroom_dummy[i] <- "p"  
+  } else {
+  pred_mushroom_dummy[i] <- "e"  
+  }
+  
+}
+print(pred_mushroom_dummy)
+
+table(pred_mushroom_dummy, mushroom[,1])
+```
+
+```{r}
+# 2 Principal component analysis
+names(iris)
+
+iris_means <- apply(iris[, -5], 2, mean) # that 2 indiciates columns. 1 indicates rows.
+iris_vars <- apply(iris[, -5], 2, var)
+
+pr.out <- prcomp(iris[, -5], scale=TRUE)
+pr.out$center
+pr.out$scale
+pr.out$rotation
+
+biplot(pr.out, scale=0)
+```
+
+
+```{r}
+pr.var <- pr.out$sdev^2
+pve <- pr.var / sum(pr.var)
+
+plot(pve, xlab="Principal Component", ylab="Proportion of Variance Explained ",ylim=c(0,1), type="b")
+
+plot(cumsum(pve), xlab="Principal Component", ylab="Cumulative Proportion of Variance Explained ", ylim=c(0,1) ,type="b")
+```
+
+```{r}
+# 3 principal component regression
+install.packages("pls")
+library(pls)
+library(ISLR)
+
+Hitters <- Hitters
+sum(is.na(Hitters))
+Hitters <- na.omit(Hitters)
+
+set.seed(1)
+train <- sample(1:nrow(Hitters), nrow(Hitters)*2/3)
+Hitters.train <- Hitters[train,]
+Hitters.test <- Hitters[-train,]
+
+set.seed(1)
+pcr.fit <- pcr(Salary~.,
+               data = Hitters.train,
+               scale = TRUE,
+               validation = "CV")
+
+validationplot(pcr.fit,
+               val.type = "MSEP")
+pcr.pred <- predict(pcr.fit, Hitters.test, ncomp = 5)
+mean((pcr.pred - Hitters.test$Salary)^2)
+
+# fit the pcr on the full data set using M=5
+pcr.fit.final <- pcr(Salary~.,
+                     data = Hitters,
+                     scale = TRUE,
+                     ncomp = 5)
+                     
+summary(pcr.fit.final)
+
+```
+
+```{r}
+# question 4.3
+
+install.packages("MASS")
+library(MASS)
+
+Boston <- Boston
+sum(is.na(Boston)) # make sure if there is missing value
+
+set.seed(1)
+train_id <- sample(1:nrow(Boston), nrow(Boston)*4/5)
+Boston.train <- Boston[train_id,]
+Boston.test <- Boston[-train_id,]
+
+pcr.fit_Boston <- pcr(medv~.,
+               data = Boston.train,
+               scale = TRUE,
+               validation = "CV")
+
+validationplot(pcr.fit_Boston,
+               val.type = "MSEP")  # cv error is lowest when M=5 principal components
+
+summary(pcr.fit_Boston)
+
+# the MSE when M is used
+pcr.fit.final_Boston <- pcr(medv~.,
+                     data = Boston.train,
+                     scale = TRUE,
+                     ncomp = 5,
+                     validation="CV")
+
+pcr.pred_Boston <- predict(pcr.fit.final_Boston, Boston.test, ncomp = 5)
+mean((pcr.pred_Boston - Boston.test$medv)^2)
+
+pcr.fit.entire_Boston <- pcr(medv~.,
+                     data = Boston,
+                     scale = TRUE,
+                     ncomp = 5)
+                     
+summary(pcr.fit.entire_Boston)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
